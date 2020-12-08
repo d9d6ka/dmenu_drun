@@ -9,20 +9,6 @@ from xdg.DesktopEntry import DesktopEntry as DE
 from subprocess import Popen, PIPE
 
 
-def split_escape(string, delim=' ', escape='\\'):
-    tmp = string.split(delim)
-    res = []
-    i = 0
-    while i < len(tmp):
-        if tmp[i].endswith(escape) and (i + 1 < len(tmp)):
-            res.append('{} {}'.format(tmp[i], tmp[i+1]))
-            i += 1
-        else:
-            res.append(tmp[i])
-        i += 1
-    return res
-
-
 def dirlist():
     res = []
     try:
@@ -47,9 +33,14 @@ def appdict():
             if not curfile.endswith('.desktop'):
                 continue
             curdesktop = DE('{}/{}'.format(path, curfile))
-            if not curdesktop.getName() in res:
-                res[curdesktop.getName()] = {'exec': split_escape(curdesktop.getExec())[0],
-                                             'term': curdesktop.getTerminal()}
+            if not curdesktop.getType() == 'Application':
+                continue
+            if curdesktop.getNoDisplay() or curdesktop.getHidden():
+                continue
+            if curdesktop.getName() not in res:
+                res[curdesktop.getName()] = {'exec': curdesktop.getExec(),
+                                             'term': curdesktop.getTerminal(),
+                                             'loc': '{}/{}'.format(path, curfile)}
     return res
 
 
@@ -74,6 +65,30 @@ def calldmenu(apps):
         return ''
 
 
+def search(choice, appdict):
+    possible = choice.split(' ')[0]
+    possibleargs = choice[len(possible)+1:]
+    for key in appdict:
+        if appdict[key]['exec'].find(possible) > -1:
+            return key, possibleargs
+    return '', ''
+
+
+def arg_fill(choice, appdict, args=''):
+    if choice not in appdict:
+        return ''
+    res = appdict[choice]['exec']
+    res = res.replace('%u', args)
+    res = res.replace('%U', args)
+    res = res.replace('%f', args)
+    res = res.replace('%F', args)
+    res = res.replace('%c', '"{}"'.format(choice))
+    res = res.replace('%k', appdict[choice]['loc'])
+    res = res.replace('%i', '')
+    res = res.replace('%%', '%')
+    return res.strip()
+
+
 if __name__ == '__main__':
     try:
         term = os.environ['TERMINAL']
@@ -81,8 +96,12 @@ if __name__ == '__main__':
         term = 'xterm'
     apps = appdict()
     res = calldmenu(applist(apps))
-    if res:
+    args = ''
+    if (res != '') and (res not in apps):
+        res, args = search(res, apps)
+    if res != '':
+        fin = arg_fill(res, apps, args)
         if apps[res]['term']:
-            Popen([term, '-e', apps[res]['exec']])
+            Popen('{} -e {}'.format(term, fin), shell=True)
         else:
-            Popen([apps[res]['exec']])
+            Popen(fin, shell=True)
