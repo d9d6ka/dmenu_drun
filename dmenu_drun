@@ -69,7 +69,7 @@ def search(choice, appdict):
     possible = choice.split(' ')[0]
     possibleargs = choice[len(possible)+1:]
     for key in appdict:
-        if appdict[key]['exec'].find(possible) > -1:
+        if (key.find(possible) > -1) or (appdict[key]['exec'].find(possible) > -1):
             return key, possibleargs
     return '', ''
 
