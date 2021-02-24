@@ -12,13 +12,16 @@ from subprocess import Popen, PIPE
 def dirlist():
     res = []
     try:
-        res.append(os.environ['XDG_DATA_HOME'])
+        res.extend(['{}/applications'.format(dir.rstrip('/'))
+                    for dir in os.environ['XDG_DATA_HOME'].split(':')])
     except KeyError:
         res.append('{}/.local/share/applications'.format(os.environ['HOME']))
     try:
-        res.extend(os.environ['XDG_DATA_DIRS'].split(':'))
+        res.extend(['{}/applications'.format(dir.rstrip('/'))
+                    for dir in os.environ['XDG_DATA_DIRS'].split(':')])
     except KeyError:
-        res.extend('/usr/local/share/applications:/usr/share/applications'.split(':'))
+        res.extend(
+            '/usr/local/share/applications:/usr/share/applications'.split(':'))
     return res
 
 
@@ -38,9 +41,10 @@ def appdict():
             if curdesktop.getNoDisplay() or curdesktop.getHidden():
                 continue
             if curdesktop.getName() not in res:
-                res[curdesktop.getName()] = {'exec': curdesktop.getExec(),
-                                             'term': curdesktop.getTerminal(),
-                                             'loc': '{}/{}'.format(path, curfile)}
+                res[curdesktop.getName()] = {
+                    'exec': curdesktop.getExec(),
+                    'term': curdesktop.getTerminal(),
+                    'loc': '{}/{}'.format(path, curfile)}
     return res
 
 
@@ -69,7 +73,8 @@ def search(choice, appdict):
     possible = choice.split(' ')[0]
     possibleargs = choice[len(possible)+1:]
     for key in appdict:
-        if (key.find(possible) > -1) or (appdict[key]['exec'].find(possible) > -1):
+        if ((key.find(possible) > -1) or
+                (appdict[key]['exec'].find(possible) > -1)):
             return key, possibleargs
     return '', ''
 
