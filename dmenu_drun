@@ -50,9 +50,8 @@ def putcachefile(cachedict):
 def getdirlist():
     res = []
     try:
-        res.extend(
-            ['{}/applications'.format(dir.rstrip('/'))
-             for dir in os.environ['XDG_DATA_HOME'].split(':')]
+        res.append(
+            '{}/applications'.format(os.environ['XDG_DATA_HOME'].rstrip('/'))
         )
     except KeyError:
         res.append(
