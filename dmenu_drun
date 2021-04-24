@@ -100,7 +100,8 @@ def getapplist(appdict, cachedict):
         key=lambda item: item[1],
         reverse=True
     ):
-        res.append(key)
+        if key in appdict:
+            res.append(key)
     keys = list(appdict.keys())
     keys.sort()
     for key in keys:
